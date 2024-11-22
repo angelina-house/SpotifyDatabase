@@ -3,7 +3,7 @@
 from database_manager import DatabaseManager
 import spotipy # type: ignore
 from spotipy.oauth2 import SpotifyOAuth # type: ignore
-import tkinter as tk
+
 
 # Database configuration
 db_config = {
@@ -26,11 +26,8 @@ spotify_client = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
 
 # Initialize database manager and GUI
 db_manager = DatabaseManager(db_config)
-root = tk.Tk()
 
 
-# Start the GUI main loop
-root.mainloop()
 
 # Close the database connection
 db_manager.close()

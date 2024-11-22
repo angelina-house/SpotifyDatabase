@@ -1,5 +1,25 @@
 !! BEFORE RUNNING CHANGE MYSQL LOGIN !!
 
+** TODO **
+Jack 
+    - design the configure user interface using html, css, and javascript
+    - if possible seperate the html, css, and javascript into seperate files
+
+Ang
+    - flask 
+
+Hunter
+    - blends 
+
+Dani
+    - configure and create tables from diagram
+    - if time, work on dancability
+
+Gabe
+    - add multi user functionality
+    - work with jack on html intergration with database
+
+** Running the app **
 
 installs required for running:
     
@@ -44,4 +64,6 @@ templates/index.html
     - contains the javascript for the app (web popup)
 
 - ang
+
+
 
