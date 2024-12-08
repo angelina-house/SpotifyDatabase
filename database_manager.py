@@ -22,7 +22,16 @@ class DatabaseManager:
                 track_uri VARCHAR(255)
             );
         """)
-        
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user (
+                Email VARCHAR(255),
+                Password VARCHAR(60),
+                Username VARCHAR(30) NOT NULL,
+                UserID VARCHAR(36) UNIQUE NOT NULL
+            );
+        """)
+
         # Create playlists table
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS playlists (
@@ -30,9 +39,47 @@ class DatabaseManager:
                 playlist_id VARCHAR(255) UNIQUE,
                 playlist_name VARCHAR(255),
                 owner VARCHAR(255),
-                total_tracks INT
+                total_tracks INT,
+                userID VARCHAR(36),
+                FOREIGN KEY (userID) REFERENCES user(UserID)            
             );
         """)
+
+        # Create Songs table
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS songs (
+                SongID VARCHAR(22) UNIQUE NOT NULL PRIMARY KEY,
+                SongName VARCHAR(255) NOT NULL,
+                Artist VARCHAR(100) NOT NULL,
+                Album VARCHAR(100) NOT NULL,
+                Genre VARCHAR(100),
+                Instrumentalness DOUBLE,
+                Acousticness DOUBLE,
+                Duration_ms INT,
+                Type VARCHAR(10),
+                Tempo DOUBLE,
+                Danceability DOUBLE,
+                Mode BOOLEAN,
+                Speechiness DOUBLE,
+                Loudness DOUBLE,
+                Liveness DOUBLE,
+                Time_Signature INT,
+                Energy DOUBLE,
+                Valence DOUBLE,
+                SKey INTEGER  
+            );
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS playlistSong (
+                PlaylistID VARCHAR(255) NOT NULL,
+                SongID VARCHAR(22) NOT NULL,
+                PRIMARY KEY (SongID, PlaylistID),
+                FOREIGN KEY (SongID) REFERENCES songs(SongID),
+                FOREIGN KEY (PlaylistID) REFERENCES playlists(playlist_id)
+            );
+        """)
+
         self.connection.commit()
 
     def add_playlist(self, playlist_id, playlist_name, owner, total_tracks):
@@ -60,6 +107,49 @@ class DatabaseManager:
             )
             self.cursor.execute(insert_query, track_data)
         self.connection.commit()
+
+    # def add_user(self):
+
+    def add_songs(self, songs):
+        # Add Songs to the songs table.
+        insert_query = """
+            INSERT INTO songs (SongID, SongName, Artist, Album)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE SongName=VALUES(SongName);
+        """
+
+        #, Acousticness, Duration_ms, 
+        #                      Type, Tempo, Danceability, Mode, Speechiness, Loudness, Liveness, Time_Signature, Energy, Valence, SKey
+
+        successful_inserts = []
+        for song in songs:
+            song_data = (
+                song['SongID'],
+                song['SongName'],
+                song['Artist'],
+                song['Album']
+                #song['Genre'],
+                #song['Instrumentalness']
+                #song['Acousticness'],
+                #song['Duration_ms'],
+                #song['Type'],
+                #song['Temp'],
+                #song['Danceability'],
+                #song['Mode'],
+                #song['Speechiness'],
+                #song['Loudness'],
+                #song['Liveness'],
+                #song['Time_Signature'],
+                #song['Energy'],
+                #song['Valence'],
+                #song['SKey']
+            )
+            print("Inserting song:", song_data)  # Debugging statement
+            self.cursor.execute(insert_query, song_data)
+            successful_inserts.append(song_data)
+        self.connection.commit()
+
+    # def add_playlistSong(self):
 
     def get_table_names(self):
         """Fetch all table names in the database."""

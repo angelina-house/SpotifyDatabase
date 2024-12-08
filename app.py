@@ -9,7 +9,7 @@ from spotipy.oauth2 import SpotifyOAuth # type: ignore
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Stormy@0704',
+    'password': '@5u93rD0m017',
     'database': 'spotify_db'
 }
 
@@ -51,6 +51,83 @@ def get_playlist_tracks(playlist_id):
 
     return jsonify(track_details)
 
+# Helper function to fetch genre data
+def get_artist_genres(artist_id):
+    artist_data = spotify_client.artist(artist_id)  # Fetch artist details
+    return artist_data.get('genres', [])  # Return genres or an empty list if none exist
+
+def get_audio_features(track_ids):
+    audio_features_list = []
+
+    track_batches = [track_ids[i:i+100] for i in range(0, len(track_ids), 100)]
+    for batch in track_batches:
+        features = spotify_client.audio_features(batch)
+        if features:
+            for audio_features in features:
+                if audio_features:  # Ensure data is valid
+                    # Extract only the required audio features
+                    filtered_features = {
+                        'Acousticness': audio_features.get('acousticness', 0.0),
+                        'Duration_ms': audio_features.get('duration_ms', 0),
+                        'Type': audio_features.get('type', 'track'),
+                        'Tempo': audio_features.get('tempo', 0.0),
+                        'Danceability': audio_features.get('danceability', 0.0),
+                        'Mode': bool(audio_features.get('mode', 0)),
+                        'Speechiness': audio_features.get('speechiness', 0.0),
+                        'Loudness': audio_features.get('loudness', 0.0),
+                        'Liveness': audio_features.get('liveness', 0.0),
+                        'Time_Signature': audio_features.get('time_signature', 4),
+                        'Energy': audio_features.get('energy', 0.0),
+                        'Valence': audio_features.get('valence', 0.0),
+                        'SKey': audio_features.get('key', -1),
+                    }
+                    audio_features_list.append(filtered_features)
+
+    return audio_features_list
+
+# Helper function to fetch song data
+def get_song_data(playlist_id):
+    # Fetch playlist details
+    songs = []
+    playlist_tracks = spotify_client.playlist_tracks(playlist_id)
+    # track_ids = [track['track']['id'] for track in playlist_tracks['items'] if track.get('track')]
+
+    # Fetch audio features for the tracks
+    # audio_features_list = get_audio_features(track_ids)
+
+    for track in playlist_tracks['items']:
+        track_data = track.get('track')
+        if track_data:
+            # audio_features = audio_features_list[i] if i < len(audio_features_list) else {}
+
+            # Fetch Genre
+            #artist_id = track_data['artists'][0]['id']  # Get the first artist's ID
+            # genres = get_artist_genres(artist_id)  # Fetch genres
+
+            songs.append({
+                'SongID': track_data['id'],
+                'SongName': track_data.get('name', 'Unkown Name'),
+                'Artist': (track_data.get('artists') or [{}])[0].get('name', 'Unkown Artist'),
+                'Album': track_data.get('album', {}).get('name', 'Unkown Album')
+                #'Instrumentalness': audio_features.get('instrumentalness', 0.0),
+                #'Acousticness': audio_features.get('acousticness', 0.0),
+                #'Duration_ms': audio_features.get('duration_ms', 0),
+                #'Type': audio_features.get('type', 'track'),
+                #'Tempo': audio_features.get('tempo', 0.0),
+                #'Danceability': audio_features.get('danceability', 0.0),
+                #'Mode': bool(audio_features.get('mode', 0)),
+                #'Speechiness': audio_features.get('speechiness', 0.0),
+                #'Loudness': audio_features.get('loudness', 0.0),
+                #'Liveness': audio_features.get('liveness', 0.0),
+                #'Time_Signature': audio_features.get('time_signature', 4),
+                #'Energy': audio_features.get('energy', 0.0),
+                #'Valence': audio_features.get('valence', 0.0),
+                #'SKey': audio_features.get('key', -1),
+                # 'Genre': ', '.join(genres)
+            })
+
+    return {'songs': songs}
+            
 @app.route('/add_playlist_to_db/<playlist_id>', methods=['POST'])
 def add_playlist_to_db(playlist_id):
     """Fetch playlist info and add it to the playlists table."""
@@ -63,7 +140,10 @@ def add_playlist_to_db(playlist_id):
     # Add playlist to the database
     db_manager.add_playlist(playlist_id, playlist_name, owner, total_tracks)
 
-    return jsonify({"status": "success", "message": f"Playlist '{playlist_name}' added to the database!"})
+    data = get_song_data(playlist_id)
+    db_manager.add_songs(data['songs'])
+
+    return jsonify({"status": "success", "message": f"Playlist '{playlist_name}' and its songsadded to the database!"})
 
 # Run the Flask app
 if __name__ == '__main__':
