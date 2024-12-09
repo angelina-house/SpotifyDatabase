@@ -3,12 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <title>Spotify Database Manager</title>
-    <link rel="stylesheet" href="style.css" /> 
+    <style>
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1;
+            padding-top: 60px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* Black with opacity */
+        }
 
+        .modal-content {
+            background-color: #000000;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #535353;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        body {
+            background-color:#212121;
+        }
+        
+        h1 {
+            color:#b3b3b3;
+            text-align: center;
+            font-family: circular-black;
+        }
+
+        h2 {
+            color:#b3b3b3
+        }
+        div {
+            color:#ffffff
+        }
+        li{
+            color:#ffffff
+        }
+        button {
+            background-color: #13a200;
+            color: white;
+            padding: 10px 10px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+    </style>
 </head>
 <body>
-    <h1><span style="color:#1db954">Spotify</span> Database Manager</h1>
-    <h2 style="color:#b3b3b3">All User Playlists</h2>
+    <h1> <span style="color:#1ac907"> Spotify </span>Database Manager</h1>
+    <h2>All User Playlists</h2>
     <ul>
         {% for playlist in playlists %}
             <li>
@@ -36,7 +98,83 @@
         </div>
     </div>
 
-    <script  src="jv.js">
+    <script>
+        // Attach click event listeners to each "View Tracks" button and "Save to Database" button
+        document.addEventListener("DOMContentLoaded", function () {
+            // Event listener for "View Tracks" buttons
+            document.querySelectorAll('.view-tracks-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const playlistId = button.getAttribute('data-id');
+                    viewPlaylistTracks(playlistId);
+                });
+            });
+
+            // Event listener for "Save to Database" buttons
+            document.querySelectorAll('.save-to-db-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const playlistId = button.getAttribute('data-id');
+                    addPlaylistToDatabase(playlistId);
+                });
+            });
+        });
+
+        // Function to fetch and display playlist tracks
+        function viewPlaylistTracks(playlistId) {
+            fetch(`/get_playlist_tracks/${playlistId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const trackTable = document.getElementById("trackTable");
+                    trackTable.innerHTML = `
+                        <tr>
+                            <th>Track Name</th>
+                            <th>Artist</th>
+                            <th>Album</th>
+                            <th>URI</th>
+                        </tr>
+                    `;
+                    data.forEach(track => {
+                        const row = `
+                            <tr>
+                                <td>${track.track_name}</td>
+                                <td>${track.artist}</td>
+                                <td>${track.album}</td>
+                                <td>${track.uri}</td>
+                            </tr>
+                        `;
+                        trackTable.innerHTML += row;
+                    });
+                    openModal();
+                })
+                .catch(error => console.error('Error fetching playlist tracks:', error));
+        }
+
+        // Function to add playlist to the database
+        function addPlaylistToDatabase(playlistId) {
+            fetch(`/add_playlist_to_db/${playlistId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Show success message
+                })
+                .catch(error => console.error('Error adding playlist to database:', error));
+        }
+
+        // Function to open the modal
+        function openModal() {
+            document.getElementById("playlistModal").style.display = "block";
+        }
+
+        // Function to close the modal
+        function closeModal() {
+            document.getElementById("playlistModal").style.display = "none";
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById("playlistModal");
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
     </script>
 </body>
 </html>
