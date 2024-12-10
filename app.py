@@ -9,7 +9,7 @@ from spotipy.oauth2 import SpotifyOAuth # type: ignore
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Stormy@0704',
+    'password': 'CPSC408!',
     'database': 'spotify_db'
 }
 
@@ -18,7 +18,7 @@ CLIENT_ID = '8b1f1dfdc20e4652933901bb9d7c45a2'
 CLIENT_SECRET = 'a8156ca37a6f41fab768c815bcf1b8cf'
 REDIRECT_URI = 'http://localhost:8888/callback'
 # Define the required scope
-SCOPE = 'user-top-read playlist-modify-public playlist-read-private playlist-read-collaborative'
+SCOPE = 'user-top-read playlist-modify-public playlist-read-private playlist-read-collaborative' 
 
 
 # Initialize the Flask app and database manager
@@ -51,7 +51,7 @@ def get_playlist_tracks(playlist_id):
 
     return jsonify(track_details)
 
-@app.route('/add_playlist_to_db/<playlist_id>', methods=['POST'])
+@app.route('/add_playlist_to_db/<playlist_id>', methods=['POST'])   # ------GPT------- pulls user and source of the song here
 def add_playlist_to_db(playlist_id):
     """Fetch playlist info, add it to the playlists table, and optionally add its tracks."""
     # Fetch playlist details
@@ -80,10 +80,32 @@ def add_playlist_to_db(playlist_id):
         song_exists_query = "SELECT COUNT(*) FROM songs WHERE SongID = %s"
         db_manager.cursor.execute(song_exists_query, (song_data['SongID'],))
         if db_manager.cursor.fetchone()[0] == 0:
-            # Add the song if it doesn't exist
-            db_manager.add_tracks([song_data])
+            # Add the song with source (playlist name) and user (owner)
+            db_manager.add_tracks([song_data], playlist_name, owner)
 
     return jsonify({"status": "success", "message": f"Playlist '{playlist_name}' and its tracks added to the database!"})
+
+
+
+
+
+
+
+# ------  new blend feature \/
+
+# @app.route('/blend_playlists/<playlist_id_a>/<playlist_id_b>', methods=['POST'])
+# def blend_playlists_route(playlist_id_a, playlist_id_b):
+#     """Blend two playlists and save them in the blended table."""
+#     db_manager.blend_playlists(playlist_id_a, playlist_id_b, spotify_client)
+#     return jsonify({"status": "success", "message": "Playlists successfully blended!"})
+
+
+
+# ---------
+
+
+
+
 
 # Run the Flask app
 if __name__ == '__main__':
