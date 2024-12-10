@@ -11,17 +11,17 @@ class DatabaseManager:
         self.setup_tables()
 
     def setup_tables(self):
-        """Create the necessary tables if they don't exist."""
-        # Create top_tracks table
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS top_tracks (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                track_name VARCHAR(255),
-                artist VARCHAR(255),
-                album VARCHAR(255),
-                track_uri VARCHAR(255)
-            );
-        """)
+        # """Create the necessary tables if they don't exist.""" 
+        # # Create top_tracks table
+        # self.cursor.execute("""
+        #     CREATE TABLE IF NOT EXISTS top_tracks (
+        #         id INT AUTO_INCREMENT PRIMARY KEY,
+        #         track_name VARCHAR(255),
+        #         artist VARCHAR(255),
+        #         album VARCHAR(255),
+        #         track_uri VARCHAR(255)
+        #     );
+        # """)
         
         # Create playlists table
         self.cursor.execute("""
@@ -31,6 +31,16 @@ class DatabaseManager:
                 playlist_name VARCHAR(255),
                 owner VARCHAR(255),
                 total_tracks INT
+            );
+        """)
+
+        # Create song table
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS songs (
+                SongName VARCHAR(255) NOT NULL,
+                Artist VARCHAR(100) NOT NULL,
+                Album VARCHAR(100) NOT NULL,
+                SongID VARCHAR(100) UNIQUE NOT NULL PRIMARY KEY
             );
         """)
         self.connection.commit()
@@ -46,17 +56,20 @@ class DatabaseManager:
         self.connection.commit()
 
     def add_tracks(self, tracks):
-        """Add tracks to the top_tracks table."""
-        insert_query = """
-            INSERT INTO top_tracks (track_name, artist, album, track_uri)
+        """Add tracks to the songs table."""
+        insert_query = """ 
+            INSERT INTO songs (SongName, Artist, Album, SongID)
             VALUES (%s, %s, %s, %s)
-        """
+            ON DUPLICATE KEY UPDATE SongName=VALUES(SongName), Artist=VALUES(Artist), Album=VALUES(Album)
+        """ 
+
         for track in tracks:
+            print(track)  
             track_data = (
-                track['track_name'],
-                track['artist'],
-                track['album'],
-                track['uri']
+                track['songName'],
+                track['Artist'],
+                track['Album'],
+                track['SongID']
             )
             self.cursor.execute(insert_query, track_data)
         self.connection.commit()

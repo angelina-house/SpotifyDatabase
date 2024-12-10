@@ -53,7 +53,7 @@ def get_playlist_tracks(playlist_id):
 
 @app.route('/add_playlist_to_db/<playlist_id>', methods=['POST'])
 def add_playlist_to_db(playlist_id):
-    """Fetch playlist info and add it to the playlists table."""
+    """Fetch playlist info, add it to the playlists table, and optionally add its tracks."""
     # Fetch playlist details
     playlist = spotify_client.playlist(playlist_id)
     playlist_name = playlist.get('name', 'Unknown Name')
@@ -63,7 +63,27 @@ def add_playlist_to_db(playlist_id):
     # Add playlist to the database
     db_manager.add_playlist(playlist_id, playlist_name, owner, total_tracks)
 
-    return jsonify({"status": "success", "message": f"Playlist '{playlist_name}' added to the database!"})
+    # Fetch songs in the playlist
+    playlist_tracks = spotify_client.playlist_tracks(playlist_id)
+    for item in playlist_tracks['items']:
+        track = item.get('track')
+        if not track:
+            continue
+        song_data = {
+            'songName': track.get('name', 'Unknown Name'),
+            'Artist': (track.get('artists') or [{}])[0].get('name', 'Unknown Artist'),
+            'Album': track.get('album', {}).get('name', 'Unknown Album'),
+            'SongID': track.get('uri', 'No URI')
+        }
+        
+        # Check if the song already exists in the database
+        song_exists_query = "SELECT COUNT(*) FROM songs WHERE SongID = %s"
+        db_manager.cursor.execute(song_exists_query, (song_data['SongID'],))
+        if db_manager.cursor.fetchone()[0] == 0:
+            # Add the song if it doesn't exist
+            db_manager.add_tracks([song_data])
+
+    return jsonify({"status": "success", "message": f"Playlist '{playlist_name}' and its tracks added to the database!"})
 
 # Run the Flask app
 if __name__ == '__main__':
