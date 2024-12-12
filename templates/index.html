@@ -1,152 +1,63 @@
+<!-- templates/index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Spotify Database Manager</title>
-    <style>
-        /* Modal styling */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1;
-            padding-top: 60px;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4); /* Black with opacity */
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover, .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" /> 
 </head>
 <body>
-    <h1>Spotify Database Manager</h1>
-    <h2>All User Playlists</h2>
-    <ul>
-        {% for playlist in playlists %}
-            <li>
-                {{ playlist['name'] }}
-                <!-- Add data-id attributes for both buttons -->
-                <button class="view-tracks-btn" data-id="{{ playlist['id'] }}">View Tracks</button>
-                <button class="save-to-db-btn" data-id="{{ playlist['id'] }}">Save to Database</button>
-            </li>
-        {% endfor %}
-    </ul>
+    <h1><span style="color:#1db954">Spotify</span> Database Manager</h1>
 
-    <!-- Modal Structure -->
-    <div id="playlistModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Playlist Tracks</h2>
-            <table id="trackTable" border="1">
-                <tr>
-                    <th>Track Name</th>
-                    <th>Artist</th>
-                    <th>Album</th>
-                    <th>URI</th>
-                </tr>
-            </table>
+    <!-- Section for Authenticated Users -->
+    {% if not playlists %}
+        <h2 style="color:#b3b3b3">Authenticated Users</h2>
+        {% if users %}
+            <ul>
+                {% for user_id, display_name in users %}
+                    <li>
+                        {{ display_name }} 
+                        <a href="{{ url_for('select_user', spotify_user_id=user_id) }}">View Playlists</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No users authenticated yet.</p>
+        {% endif %}
+        <a href="{{ url_for('login') }}">Log in with Spotify</a>
+    {% else %}
+        <!-- Section for Playlists of Selected User -->
+        <h2 style="color:#b3b3b3">Playlists for User: {{ user_id }}</h2>
+        <ul>
+            {% for playlist in playlists %}
+                <li>
+                    {{ playlist['name'] }}
+                    <!-- Add data-id attributes for both buttons -->
+                    <button class="view-tracks-btn" data-id="{{ playlist['id'] }}">View Tracks</button>
+                    <button class="save-to-db-btn" data-id="{{ playlist['id'] }}">Save to Database</button>
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('index') }}">Back to Users</a>
+
+        <!-- Modal Structure -->
+        <div id="playlistModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Playlist Tracks</h2>
+                <table id="trackTable" border="1">
+                    <tr>
+                        <th>Track Name</th>
+                        <th>Artist</th>
+                        <th>Album</th>
+                        <th>URI</th>
+                    </tr>
+                </table>
+            </div>
         </div>
-    </div>
+    {% endif %}
 
-    <script>
-        // Attach click event listeners to each "View Tracks" button and "Save to Database" button
-        document.addEventListener("DOMContentLoaded", function () {
-            // Event listener for "View Tracks" buttons
-            document.querySelectorAll('.view-tracks-btn').forEach(button => {
-                button.addEventListener('click', function () {
-                    const playlistId = button.getAttribute('data-id');
-                    viewPlaylistTracks(playlistId);
-                });
-            });
-
-            // Event listener for "Save to Database" buttons
-            document.querySelectorAll('.save-to-db-btn').forEach(button => {
-                button.addEventListener('click', function () {
-                    const playlistId = button.getAttribute('data-id');
-                    addPlaylistToDatabase(playlistId);
-                });
-            });
-        });
-
-        // Function to fetch and display playlist tracks
-        function viewPlaylistTracks(playlistId) {
-            fetch(`/get_playlist_tracks/${playlistId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const trackTable = document.getElementById("trackTable");
-                    trackTable.innerHTML = `
-                        <tr>
-                            <th>Track Name</th>
-                            <th>Artist</th>
-                            <th>Album</th>
-                            <th>URI</th>
-                        </tr>
-                    `;
-                    data.forEach(track => {
-                        const row = `
-                            <tr>
-                                <td>${track.track_name}</td>
-                                <td>${track.artist}</td>
-                                <td>${track.album}</td>
-                                <td>${track.uri}</td>
-                            </tr>
-                        `;
-                        trackTable.innerHTML += row;
-                    });
-                    openModal();
-                })
-                .catch(error => console.error('Error fetching playlist tracks:', error));
-        }
-
-        // Function to add playlist to the database
-        function addPlaylistToDatabase(playlistId) {
-            fetch(`/add_playlist_to_db/${playlistId}`, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message); // Show success message
-                })
-                .catch(error => console.error('Error adding playlist to database:', error));
-        }
-
-        // Function to open the modal
-        function openModal() {
-            document.getElementById("playlistModal").style.display = "block";
-        }
-
-        // Function to close the modal
-        function closeModal() {
-            document.getElementById("playlistModal").style.display = "none";
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById("playlistModal");
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='jv.js') }}"></script>
 </body>
 </html>
