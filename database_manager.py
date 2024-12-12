@@ -113,13 +113,11 @@ class DatabaseManager:
     def add_songs(self, songs):
         # Add Songs to the songs table.
         insert_query = """
-            INSERT INTO songs (SongID, SongName, Artist, Album)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO songs (SongID, SongName, Artist, Album, Genre, Instrumentalness, Acousticness, Duration_ms, Type, Tempo, Danceability,
+            Mode, Speechiness, Loudness, Liveness, Time_Signature, Energy, Valence, SKey)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE SongName=VALUES(SongName);
         """
-
-        #, Acousticness, Duration_ms, 
-        #                      Type, Tempo, Danceability, Mode, Speechiness, Loudness, Liveness, Time_Signature, Energy, Valence, SKey
 
         successful_inserts = []
         for song in songs:
@@ -127,22 +125,22 @@ class DatabaseManager:
                 song['SongID'],
                 song['SongName'],
                 song['Artist'],
-                song['Album']
-                #song['Genre'],
-                #song['Instrumentalness']
-                #song['Acousticness'],
-                #song['Duration_ms'],
-                #song['Type'],
-                #song['Temp'],
-                #song['Danceability'],
-                #song['Mode'],
-                #song['Speechiness'],
-                #song['Loudness'],
-                #song['Liveness'],
-                #song['Time_Signature'],
-                #song['Energy'],
-                #song['Valence'],
-                #song['SKey']
+                song['Album'],
+                song['Danceability'],
+                song['Genre'],
+                song['Instrumentalness'],
+                song['Acousticness'],
+                song['Duration_ms'],
+                song['Type'],
+                song['Tempo'],
+                song['Mode'],
+                song['Speechiness'],
+                song['Loudness'],
+                song['Liveness'],
+                song['Time_Signature'],
+                song['Energy'],
+                song['Valence'],
+                song['SKey']
             )
             print("Inserting song:", song_data)  # Debugging statement
             self.cursor.execute(insert_query, song_data)

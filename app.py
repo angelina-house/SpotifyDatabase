@@ -18,7 +18,7 @@ CLIENT_ID = '8b1f1dfdc20e4652933901bb9d7c45a2'
 CLIENT_SECRET = 'a8156ca37a6f41fab768c815bcf1b8cf'
 REDIRECT_URI = 'http://localhost:8888/callback'
 # Define the required scope
-SCOPE = 'user-top-read playlist-modify-public playlist-read-private playlist-read-collaborative'
+SCOPE = 'user-top-read playlist-modify-public playlist-read-private playlist-read-collaborative user-library-read'
 
 
 # Initialize the Flask app and database manager
@@ -56,59 +56,36 @@ def get_artist_genres(artist_id):
     artist_data = spotify_client.artist(artist_id)  # Fetch artist details
     return artist_data.get('genres', [])  # Return genres or an empty list if none exist
 
-def get_audio_features(track_ids):
-    audio_features_list = []
-
-    track_batches = [track_ids[i:i+100] for i in range(0, len(track_ids), 100)]
-    for batch in track_batches:
-        features = spotify_client.audio_features(batch)
-        if features:
-            for audio_features in features:
-                if audio_features:  # Ensure data is valid
-                    # Extract only the required audio features
-                    filtered_features = {
-                        'Acousticness': audio_features.get('acousticness', 0.0),
-                        'Duration_ms': audio_features.get('duration_ms', 0),
-                        'Type': audio_features.get('type', 'track'),
-                        'Tempo': audio_features.get('tempo', 0.0),
-                        'Danceability': audio_features.get('danceability', 0.0),
-                        'Mode': bool(audio_features.get('mode', 0)),
-                        'Speechiness': audio_features.get('speechiness', 0.0),
-                        'Loudness': audio_features.get('loudness', 0.0),
-                        'Liveness': audio_features.get('liveness', 0.0),
-                        'Time_Signature': audio_features.get('time_signature', 4),
-                        'Energy': audio_features.get('energy', 0.0),
-                        'Valence': audio_features.get('valence', 0.0),
-                        'SKey': audio_features.get('key', -1),
-                    }
-                    audio_features_list.append(filtered_features)
-
-    return audio_features_list
-
 # Helper function to fetch song data
 def get_song_data(playlist_id):
     # Fetch playlist details
     songs = []
     playlist_tracks = spotify_client.playlist_tracks(playlist_id)
-    # track_ids = [track['track']['id'] for track in playlist_tracks['items'] if track.get('track')]
+    #track_ids = [track['track']['id'] for track in playlist_tracks['items'] if track.get('track')]
 
     # Fetch audio features for the tracks
     # audio_features_list = get_audio_features(track_ids)
 
     for track in playlist_tracks['items']:
         track_data = track.get('track')
+        song_id = track_data['id']
+        print("got track data\n")
+        track_features = spotify_client.audio_features(song_id)[0]
         if track_data:
             # audio_features = audio_features_list[i] if i < len(audio_features_list) else {}
 
             # Fetch Genre
-            #artist_id = track_data['artists'][0]['id']  # Get the first artist's ID
-            # genres = get_artist_genres(artist_id)  # Fetch genres
+            artist_id = track_data['artists'][0]['id']  # Get the first artist's ID
+            genres = get_artist_genres(artist_id)  # Fetch genres
+            # print("got song id\n")
+            # audio_features = get_audio_features(song_id)
+            # print("got audio features\n")
 
-            songs.append({
+            song_info = {
                 'SongID': track_data['id'],
                 'SongName': track_data.get('name', 'Unkown Name'),
                 'Artist': (track_data.get('artists') or [{}])[0].get('name', 'Unkown Artist'),
-                'Album': track_data.get('album', {}).get('name', 'Unkown Album')
+                'Album': track_data.get('album', {}).get('name', 'Unkown Album'),
                 #'Instrumentalness': audio_features.get('instrumentalness', 0.0),
                 #'Acousticness': audio_features.get('acousticness', 0.0),
                 #'Duration_ms': audio_features.get('duration_ms', 0),
@@ -124,7 +101,28 @@ def get_song_data(playlist_id):
                 #'Valence': audio_features.get('valence', 0.0),
                 #'SKey': audio_features.get('key', -1),
                 # 'Genre': ', '.join(genres)
-            })
+
+                # based off of previous code such as get_playlist_tracks
+                # I have an updated version but that didn't seem to work either through my own application because I was trying to isolate
+                # the functions from the app and see if they work separately, maybe something with permissions from Spotify itself
+                'Instrumentalness': track_features['instrumentalness'],
+                'Acousticness': track_features['acousticness'],
+                'Duration_ms': track_features['duration_ms'],
+                'Type': track_features['type'],
+                'Tempo': track['tempo'],
+                'Danceability': track_features['danceability'],
+                'Mode': track_features['mode'],
+                'Speechiness': track_features['speechiness'],
+                'Loudness': track_features['loudness'],
+                'Liveness': track_features['liveness'],
+                'Time_Signature': track_features['time_signature'],
+                'Energy': track_features['energy'],                
+                'Valence': track_features['valence'],
+                'SKey': track_features['key'],
+                'Genre': ', '.join(genres)         
+            }
+
+            songs.append(song_info)
 
     return {'songs': songs}
             
